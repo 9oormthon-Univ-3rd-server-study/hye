@@ -26,25 +26,35 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        Map<String, Object> att = oAuth2User.getAttributes();
-        for(Map.Entry<String,Object> entry : att.entrySet()){
+        log.info("로그인 한 플랫폼 : " + userRequest.getClientRegistration().getRegistrationId());
+        /*for(Map.Entry<String,Object> entry : att.entrySet()){
             log.info(entry.getKey());
             log.info(entry.getValue().toString());
+        }*/
+
+        String id = "";
+        String nickname ="";
+        String nameAttributeKey = "";
+        if(userRequest.getClientRegistration().getRegistrationId().equals("google")){
+            id = oAuth2User.getAttributes().get("sub").toString();
+            nickname = oAuth2User.getAttributes().get("name").toString();
+            nameAttributeKey = "sub";
         }
-
-        List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList("ROLE_USER");
-
-
-
-        String id = oAuth2User.getAttributes().get("id").toString();
-        Map<String,Object> nick =  (Map<String, Object>) oAuth2User.getAttributes().get("properties");
-        String nickname = nick.get("nickname").toString();
+        else if(userRequest.getClientRegistration().getRegistrationId().equals("kakao")){
+            id = oAuth2User.getAttributes().get("id").toString();
+            Map<String,Object> nick =  (Map<String, Object>) oAuth2User.getAttributes().get("properties");
+            nickname = nick.get("nickname").toString();
+            nameAttributeKey = "id";
+        }
 
         if(!userRepository.existsById(id)){
             userRepository.save(User.builder().id(id).roles(Collections.singletonList("ROLE_USER")).nickname(nickname).build());
         }
+        Optional<User> user = userRepository.findById(id);
 
-        return new DefaultOAuth2User(authorities,oAuth2User.getAttributes(),"id");
+        List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(user.get().getRoles());
+
+        return new DefaultOAuth2User(authorities,oAuth2User.getAttributes(),nameAttributeKey);
 
     }
 }

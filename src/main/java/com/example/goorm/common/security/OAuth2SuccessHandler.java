@@ -30,6 +30,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         Optional<User> user = userRepository.findById(authentication.getName());
+        log.info("로그인한 유저 id : "+user.get().getId()+" 유저의 닉네임 : "+user.get().getNickname());
         String token = tokenProvider.createToken(user.get().getId(), user.get().getRoles(), LocalDateTime.now());
         String refreshToken = tokenProvider.createRefreshToken(user.get().getId(),LocalDateTime.now());
         response.setContentType("application/json");
