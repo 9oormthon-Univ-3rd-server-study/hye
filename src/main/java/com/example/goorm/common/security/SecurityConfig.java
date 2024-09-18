@@ -1,5 +1,7 @@
 package com.example.goorm.common.security;
 
+import com.example.goorm.common.exception.CustomAccessDeniedHandler;
+import com.example.goorm.common.exception.CustomAuthenticationEntryPoint;
 import com.example.goorm.service.OAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -32,6 +35,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/swagger", "/swagger-ui.html", "/swagger-ui/**", "/api-docs", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().permitAll());
         http.oauth2Login(oauth-> oauth.userInfoEndpoint(s->s.userService(oAuth2UserService)).successHandler(oAuth2SuccessHandler) );
+        http
+                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exception->exception.accessDeniedHandler(new CustomAccessDeniedHandler())
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint()));
         return http.build();
     }
 
